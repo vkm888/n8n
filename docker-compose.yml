@@ -1,0 +1,43 @@
+version: '3'
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: always
+    environment:
+      - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+    networks:
+      - cloudflare_network
+
+#  nginx:
+#    image: nginx:latest
+#    container_name: nginx-proxy
+#    restart: always
+#    volumes:
+#      - ./nginx:/etc/nginx/conf.d
+#    networks:
+#      - cloudflare_network
+#    depends_on:
+#      - n8n
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    command: tunnel --no-autoupdate run --token ${TOKEN_CLOUDFLARED}
+    restart: always
+    networks:
+      - cloudflare_network
+    depends_on:
+      - n8n
+   #- nginx
+
+networks:
+  cloudflare_network:
+    driver: bridge
